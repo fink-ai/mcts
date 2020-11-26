@@ -2,13 +2,13 @@ package at.florianfink.mcts.game;
 
 import java.util.List;
 
-public interface Game {
+public interface Game<T extends State> {
 
     State initializeGame();
 
-    List<Action> getAllowedActions(State currentState);
+    List<Action> getAllowedActions(T currentState);
 
-    State getNextState(State currentState, Action action);
+    State getNextState(T currentState, Action action);
 
-    double getReward(TerminalState state);
+    double getReward(T state);
 }

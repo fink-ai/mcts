@@ -3,11 +3,10 @@ package at.florianfink.mcts.game.bezique;
 import at.florianfink.mcts.game.Action;
 import at.florianfink.mcts.game.Game;
 import at.florianfink.mcts.game.State;
-import at.florianfink.mcts.game.TerminalState;
 
 import java.util.List;
 
-public class Bezique implements Game {
+public class Bezique implements Game { // TODO parameterize
     @Override
     public State initializeGame() {
         return null;
@@ -24,7 +23,7 @@ public class Bezique implements Game {
     }
 
     @Override
-    public double getReward(TerminalState state) {
+    public double getReward(State state) {
         return 0;
     }
 }
