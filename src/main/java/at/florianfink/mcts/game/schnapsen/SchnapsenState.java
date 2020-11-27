@@ -20,14 +20,26 @@ public class SchnapsenState implements State {
 
     private ArrayList<Trick> history = new ArrayList<>();
 
+    public SchnapsenState(SchnapsenState schnapsenState) {
+        stockCards = new ArrayList<>(schnapsenState.stockCards);
+        stockClosedBy = schnapsenState.stockClosedBy;
+
+        playerOne = new Player(Player.PlayerIdentifier.ONE);
+        playerOne.getCards().addAll(schnapsenState.playerOne.getCards());
+        playerTwo = new Player(Player.PlayerIdentifier.TWO);
+        playerTwo.getCards().addAll(schnapsenState.playerTwo.getCards());
+
+        history = new ArrayList<>(schnapsenState.history);
+    }
+
     public Player getActivePlayer() {
         if (history.isEmpty()) {
             return playerOne; // TODO: possible to start game with player 2 active?
         }
         Trick lastTrick = getLastTrick();
         return getPlayerByIdentifier(
-                lastTrick.getLeaderCard() == null || lastTrick.getResponderCard() != null ?
-                        lastTrick.getLeader()
+                lastTrick.getLeaderCard() == null || lastTrick.getResponderCard() != null
+                        ? lastTrick.getLeader()
                         : lastTrick.getResponder()
         );
     }
@@ -80,8 +92,8 @@ public class SchnapsenState implements State {
     }
 
     public int getValueForMeld(Meld meld) {
-        return meld != null ?
-                (meld.getSuit() == getTrumpSuit() ? 40 : 20)
+        return meld != null
+                ? (meld.getSuit() == getTrumpSuit() ? 40 : 20)
                 : 0;
     }
 
@@ -91,8 +103,8 @@ public class SchnapsenState implements State {
     }
 
     public Player getPlayerByIdentifier(Player.PlayerIdentifier playerIdentifier) {
-        return playerIdentifier == Player.PlayerIdentifier.ONE ?
-                playerOne
+        return playerIdentifier == Player.PlayerIdentifier.ONE
+                ? playerOne
                 : playerTwo;
     }
 
@@ -100,5 +112,9 @@ public class SchnapsenState implements State {
         if (player.getIdentifier() == Player.PlayerIdentifier.ONE) return playerTwo;
         if (player.getIdentifier() == Player.PlayerIdentifier.TWO) return playerOne;
         return null;
+    }
+
+    public boolean isStockAvailable() {
+        return stockClosedBy == null && !stockCards.isEmpty();
     }
 }

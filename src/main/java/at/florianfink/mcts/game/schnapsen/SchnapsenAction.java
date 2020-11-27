@@ -4,7 +4,7 @@ import at.florianfink.mcts.game.Action;
 import lombok.*;
 
 @Data
-@Builder(toBuilder=true)
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @With

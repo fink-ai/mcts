@@ -1,21 +1,23 @@
 package at.florianfink.mcts.game.schnapsen;
 
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder(toBuilder = true)
 public class Trick {
-    private Player.PlayerIdentifier leader;
-    private Player.PlayerIdentifier responder;
-    private Player.PlayerIdentifier winner;
+    private final Player.PlayerIdentifier leader;
+    private final Player.PlayerIdentifier responder;
+    private final Player.PlayerIdentifier winner;
 
-    private Card leaderCard;
-    private Card responderCard;
+    private final Card leaderCard;
+    private final Card responderCard;
 
-    private Meld meld;
+    private final Meld meld;
 
-    private boolean closeStock;
+    private final boolean closeStock;
 
-    public boolean isOpen() {
-        return winner == null;
+    public boolean isComplete() {
+        return winner != null;
     }
 }

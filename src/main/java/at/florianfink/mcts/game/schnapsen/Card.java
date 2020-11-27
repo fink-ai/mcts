@@ -46,8 +46,8 @@ public class Card {
     }
 
     public boolean beatsPlayedCard(Card playedCard, Suit trumpSuit) {
-        return suit == playedCard.suit ?
-                value > playedCard.value
+        return suit == playedCard.suit
+                ? value > playedCard.value
                 : suit == trumpSuit;
     }
 }
