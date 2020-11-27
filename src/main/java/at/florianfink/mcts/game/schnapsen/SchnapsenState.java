@@ -1,46 +1,45 @@
 package at.florianfink.mcts.game.schnapsen;
 
 import at.florianfink.mcts.game.State;
-import lombok.Data;
+import lombok.*;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.stream.Stream;
 
 @Data
+@Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
+@With
 public class SchnapsenState implements State {
-
-    public enum Player {
-        ONE,
-        TWO
-    }
 
     private ArrayList<Card> stockCards = new ArrayList<>();
     private Player stockClosedBy = null;
 
-    private HashSet<Card> playerOneCards = new HashSet<>();
-    private HashSet<Card> playerTwoCards = new HashSet<>();
+    private Player playerOne = new Player(Player.PlayerIdentifier.ONE);
+    private Player playerTwo = new Player(Player.PlayerIdentifier.TWO);
 
     private ArrayList<Trick> history = new ArrayList<>();
 
     public Player getActivePlayer() {
         if (history.isEmpty()) {
-            return Player.ONE; // TODO: possible to start game with player 2 active?
+            return playerOne; // TODO: possible to start game with player 2 active?
         }
         Trick lastTrick = getLastTrick();
-        return lastTrick.getLeaderCard() == null || lastTrick.getResponderCard() != null ?
-                lastTrick.getLeader()
-                : lastTrick.getResponder();
+        return getPlayerByIdentifier(
+                lastTrick.getLeaderCard() == null || lastTrick.getResponderCard() != null ?
+                        lastTrick.getLeader()
+                        : lastTrick.getResponder()
+        );
     }
 
-    private Trick getLastTrick() {
+    public Trick getLastTrick() {
         return history.get(history.size() - 1);
     }
 
     public int getScore(Player player) {
         return history.stream()
                 .filter(trick ->
-                        trick.getWinner() == player
+                        trick.getWinner() == player.getIdentifier()
                                 && trick.getLeaderCard() != null
                                 && trick.getResponderCard() != null
                 )
@@ -50,15 +49,15 @@ public class SchnapsenState implements State {
                 )
                 .mapToInt(Integer::valueOf).sum()
                 + history.stream()
-                .filter(trick -> trick.getLeader() == player)
+                .filter(trick -> trick.getLeader() == player.getIdentifier())
                 .map(trick -> getValueForMeld(trick.getMeld()))
                 .mapToInt(Integer::valueOf).sum();
     }
 
     public Player getWinner() {
-        if (playerOneCards.isEmpty() && playerTwoCards.isEmpty() ) {
-            if(stockCards.isEmpty())
-                return getLastTrick().getWinner();
+        if (playerOne.getCards().isEmpty() && playerTwo.getCards().isEmpty()) {
+            if (stockCards.isEmpty())
+                return getPlayerByIdentifier(getLastTrick().getWinner());
             if (stockClosedBy != null && getScore(stockClosedBy) < 66) {
                 return getOpponent(stockClosedBy);
             }
@@ -76,9 +75,13 @@ public class SchnapsenState implements State {
         return stockCards.get(stockCards.size() - 1);
     }
 
+    public Card.Suit getTrumpSuit() {
+        return getStockTrumpCard().getSuit();
+    }
+
     public int getValueForMeld(Meld meld) {
         return meld != null ?
-                (meld.getSuit() == getStockTrumpCard().getSuit() ? 40 : 20)
+                (meld.getSuit() == getTrumpSuit() ? 40 : 20)
                 : 0;
     }
 
@@ -87,9 +90,15 @@ public class SchnapsenState implements State {
         return getWinner() != null;
     }
 
+    public Player getPlayerByIdentifier(Player.PlayerIdentifier playerIdentifier) {
+        return playerIdentifier == Player.PlayerIdentifier.ONE ?
+                playerOne
+                : playerTwo;
+    }
+
     public Player getOpponent(Player player) {
-        if (player == Player.ONE) return Player.TWO;
-        if (player == Player.TWO) return Player.ONE;
+        if (player.getIdentifier() == Player.PlayerIdentifier.ONE) return playerTwo;
+        if (player.getIdentifier() == Player.PlayerIdentifier.TWO) return playerOne;
         return null;
     }
 }

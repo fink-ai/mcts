@@ -4,9 +4,9 @@ import lombok.Data;
 
 @Data
 public class Trick {
-    private SchnapsenState.Player leader;
-    private SchnapsenState.Player responder;
-    private SchnapsenState.Player winner;
+    private Player.PlayerIdentifier leader;
+    private Player.PlayerIdentifier responder;
+    private Player.PlayerIdentifier winner;
 
     private Card leaderCard;
     private Card responderCard;
