@@ -1,8 +1,6 @@
 package at.florianfink.mcts.game.schnapsen;
 
-import at.florianfink.mcts.game.Action;
 import at.florianfink.mcts.game.Game;
-import at.florianfink.mcts.game.State;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,7 +10,7 @@ import java.util.stream.Collectors;
 
 public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     @Override
-    public State initializeGame() {
+    public SchnapsenState initializeGame() {
         SchnapsenState initialState = new SchnapsenState();
 
         List<Card> deck = Card.generateDeck(2, 3, 4, 10, 11);
@@ -28,7 +26,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     }
 
     @Override
-    public List<Action> getAllowedActions(SchnapsenState currentState) {
+    public List<SchnapsenAction> getAllowedActions(SchnapsenState currentState) {
         if (currentState.isActivePlayerLeading()) {
             return getActionsForLeadingPlayer(currentState);
 
@@ -37,9 +35,9 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
         }
     }
 
-    private ArrayList<Action> getActionsForRespondingPlayer(SchnapsenState currentState) {
+    private ArrayList<SchnapsenAction> getActionsForRespondingPlayer(SchnapsenState currentState) {
         Player activePlayer = currentState.getActivePlayer();
-        ArrayList<Action> actions = new ArrayList<>();
+        ArrayList<SchnapsenAction> actions = new ArrayList<>();
         Card leaderCard = currentState.getLastTrick().getLeaderCard();
         if (currentState.isStockAvailable()) {
             activePlayer.getCards().forEach(card -> actions.add(new SchnapsenAction(card)));
@@ -62,10 +60,10 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
         return actions;
     }
 
-    private ArrayList<Action> getActionsForLeadingPlayer(SchnapsenState currentState) {
+    private ArrayList<SchnapsenAction> getActionsForLeadingPlayer(SchnapsenState currentState) {
         Player activePlayer = currentState.getActivePlayer();
         ArrayList<SchnapsenAction> nonClosingActions = new ArrayList<>();
-        ArrayList<Action> actions = new ArrayList<>();
+        ArrayList<SchnapsenAction> actions = new ArrayList<>();
         activePlayer.getCards().forEach(card -> {
             SchnapsenAction action = new SchnapsenAction();
             action.setPlayCard(card);
@@ -84,7 +82,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     }
 
     @Override
-    public State getNextState(SchnapsenState currentState, SchnapsenAction action) {
+    public SchnapsenState getNextState(SchnapsenState currentState, SchnapsenAction action) {
         SchnapsenState newState = new SchnapsenState(currentState);
         Player activePlayer = newState.getActivePlayer();
 
