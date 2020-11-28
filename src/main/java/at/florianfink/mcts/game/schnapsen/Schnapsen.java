@@ -18,18 +18,18 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
         List<Card> deck = Card.generateDeck(2, 3, 4, 10, 11);
         Collections.shuffle(deck);
         initialState.getStockCards().addAll(deck);
+        initialState.setTrumpSuit(deck.get(deck.size() - 1).getSuit());
 
         for (int i = 0; i < 5; i++) {
             drawCards(initialState);
         }
-
 
         return initialState;
     }
 
     @Override
     public List<Action> getAllowedActions(SchnapsenState currentState) {
-        if (currentState.getLastTrick().isComplete()) {
+        if (currentState.isActivePlayerLeading()) {
             return getActionsForLeadingPlayer(currentState);
 
         } else {
@@ -88,9 +88,8 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
         SchnapsenState newState = new SchnapsenState(currentState);
         Player activePlayer = newState.getActivePlayer();
 
-        Trick lastTrick = newState.getLastTrick();
         ArrayList<Trick> history = newState.getHistory();
-        if (lastTrick.isComplete()) {
+        if (newState.isActivePlayerLeading()) {
             // TODO exchange trump card if possible
             history.add(new Trick(
                     activePlayer.getIdentifier(),
@@ -101,8 +100,9 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
                     action.getMeld(),
                     action.isCloseStock()
             ));
-            activePlayer.getCards().remove(action.getPlayCard());
+            if (action.isCloseStock()) newState.setStockClosedBy(activePlayer.getIdentifier());
         } else {
+            Trick lastTrick = newState.getLastTrick();
             Trick completedTrick = lastTrick.toBuilder()
                     .responderCard(action.getPlayCard())
                     .winner(action.getPlayCard().beatsPlayedCard(lastTrick.getLeaderCard(), newState.getTrumpSuit())
@@ -118,6 +118,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
             }
         }
 
+        activePlayer.getCards().remove(action.getPlayCard());
         return newState;
     }
 

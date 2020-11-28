@@ -15,9 +15,6 @@ public class Trick {
 
     private final Meld meld;
 
+    // TODO: is this ever used?
     private final boolean closeStock;
-
-    public boolean isComplete() {
-        return winner != null;
-    }
 }

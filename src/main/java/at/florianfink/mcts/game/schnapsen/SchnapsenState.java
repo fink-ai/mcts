@@ -13,7 +13,9 @@ import java.util.ArrayList;
 public class SchnapsenState implements State {
 
     private ArrayList<Card> stockCards = new ArrayList<>();
-    private Player stockClosedBy = null;
+
+    private Player.PlayerIdentifier stockClosedBy = null;
+    private Card.Suit trumpSuit = null;
 
     private Player playerOne = new Player(Player.PlayerIdentifier.ONE);
     private Player playerTwo = new Player(Player.PlayerIdentifier.TWO);
@@ -23,6 +25,7 @@ public class SchnapsenState implements State {
     public SchnapsenState(SchnapsenState schnapsenState) {
         stockCards = new ArrayList<>(schnapsenState.stockCards);
         stockClosedBy = schnapsenState.stockClosedBy;
+        trumpSuit = schnapsenState.trumpSuit;
 
         playerOne = new Player(Player.PlayerIdentifier.ONE);
         playerOne.getCards().addAll(schnapsenState.playerOne.getCards());
@@ -70,8 +73,8 @@ public class SchnapsenState implements State {
         if (playerOne.getCards().isEmpty() && playerTwo.getCards().isEmpty()) {
             if (stockCards.isEmpty())
                 return getPlayerByIdentifier(getLastTrick().getWinner());
-            if (stockClosedBy != null && getScore(stockClosedBy) < 66) {
-                return getOpponent(stockClosedBy);
+            if (stockClosedBy != null && getScore(getPlayerByIdentifier(stockClosedBy)) < 66) {
+                return getOpponent(getPlayerByIdentifier(stockClosedBy));
             }
         }
 
@@ -85,10 +88,6 @@ public class SchnapsenState implements State {
 
     public Card getStockTrumpCard() {
         return stockCards.get(stockCards.size() - 1);
-    }
-
-    public Card.Suit getTrumpSuit() {
-        return getStockTrumpCard().getSuit();
     }
 
     public int getValueForMeld(Meld meld) {
@@ -116,5 +115,9 @@ public class SchnapsenState implements State {
 
     public boolean isStockAvailable() {
         return stockClosedBy == null && !stockCards.isEmpty();
+    }
+
+    public boolean isActivePlayerLeading() {
+        return history.isEmpty() || getLastTrick().getWinner() != null;
     }
 }
