@@ -12,7 +12,9 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
     public void testMethod(TGame game) {
         List<TState> states = new ArrayList<>();
         states.add(game.initializeGame());
-        // ...
+
+        RandomPolicyEvaluator<TGame, TState, TAction> evaluator = new RandomPolicyEvaluator<>();
+        evaluator.getReward(game, states.get(0));
     }
 
 }
