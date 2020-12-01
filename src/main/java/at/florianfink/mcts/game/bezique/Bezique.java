@@ -4,7 +4,7 @@ import at.florianfink.mcts.game.Action;
 import at.florianfink.mcts.game.Game;
 import at.florianfink.mcts.game.State;
 
-import java.util.List;
+import java.util.Set;
 
 public class Bezique implements Game { // TODO parameterize
     @Override
@@ -13,7 +13,7 @@ public class Bezique implements Game { // TODO parameterize
     }
 
     @Override
-    public List<Action> getAllowedActions(State currentState) {
+    public Set<Action> getAllowedActions(State currentState) {
         return null;
     }
 

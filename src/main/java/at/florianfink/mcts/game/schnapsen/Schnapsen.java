@@ -2,10 +2,7 @@ package at.florianfink.mcts.game.schnapsen;
 
 import at.florianfink.mcts.game.Game;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
@@ -26,7 +23,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     }
 
     @Override
-    public List<SchnapsenAction> getAllowedActions(SchnapsenState currentState) {
+    public Set<SchnapsenAction> getAllowedActions(SchnapsenState currentState) {
         if (currentState.isActivePlayerLeading()) {
             return getActionsForLeadingPlayer(currentState);
 
@@ -35,9 +32,9 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
         }
     }
 
-    private ArrayList<SchnapsenAction> getActionsForRespondingPlayer(SchnapsenState currentState) {
+    private HashSet<SchnapsenAction> getActionsForRespondingPlayer(SchnapsenState currentState) {
         Player activePlayer = currentState.getActivePlayer();
-        ArrayList<SchnapsenAction> actions = new ArrayList<>();
+        HashSet<SchnapsenAction> actions = new HashSet<>();
         Card leaderCard = currentState.getLastTrick().getLeaderCard();
         if (currentState.isStockAvailable()) {
             activePlayer.getCards().forEach(card -> actions.add(new SchnapsenAction(card)));
@@ -60,10 +57,10 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
         return actions;
     }
 
-    private ArrayList<SchnapsenAction> getActionsForLeadingPlayer(SchnapsenState currentState) {
+    private HashSet<SchnapsenAction> getActionsForLeadingPlayer(SchnapsenState currentState) {
         Player activePlayer = currentState.getActivePlayer();
         ArrayList<SchnapsenAction> nonClosingActions = new ArrayList<>();
-        ArrayList<SchnapsenAction> actions = new ArrayList<>();
+        HashSet<SchnapsenAction> actions = new HashSet<>();
         activePlayer.getCards().forEach(card -> {
             SchnapsenAction action = new SchnapsenAction();
             action.setPlayCard(card);
@@ -124,13 +121,22 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     public double getReward(SchnapsenState state) {
         assert state.isTerminal();
 
-        int loserScore = state.getScore(state.getOpponent(state.getWinner()));
+        double absoluteReward = getAbsoluteReward(state);
 
+        // TODO: this is only viable for calculation of first move
+        return state.getWinner().getIdentifier() == Player.PlayerIdentifier.TWO
+                ? absoluteReward
+                : -absoluteReward;
+    }
+
+    public double getAbsoluteReward(SchnapsenState state) {
+        if (state.getStockClosedBy() != null) return 2; //TODO: make this accurate
+
+        int loserScore = state.getScore(state.getOpponent(state.getWinner()));
         if (loserScore == 0) return 3;
         if (loserScore < 33) return 2;
-        return 1;
 
-        //TODO: failed closing
+        return 1;
     }
 
     private void drawCards(SchnapsenState state) {
