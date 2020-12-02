@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class UctSearch<TGame extends Game<TState, TAction>, TState extends State, TAction extends Action> {
 
+    private static final double EXPLORATION_FACTOR = 1;
+
     private final TGame game;
     @Setter
     private long secondsToSearch = 10;
@@ -32,6 +34,7 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
 
             UctNode<TState, TAction> nextChild = treePolicy(root);
             double reward = evaluator.getReward(game, nextChild.getState());
+
             backupReward(nextChild, reward);
         }
 
@@ -45,7 +48,7 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
             }
 
             if (node.getUntriedActions().isEmpty()) {
-                node = getBestChild(node, 0.7);
+                node = getBestChild(node, EXPLORATION_FACTOR);
             } else {
                 node = expandNode(node);
             }
@@ -61,7 +64,9 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
 
     private double ucb(UctNode<TState, TAction> node, double c) { // TODO: make injectable
         double exploitation = node.getCumulativeReward() / node.getVisitCount();
-        double exploration = Math.sqrt(2 * Math.log(node.getParent().getVisitCount()) / node.getVisitCount());
+        double exploration = 0;
+        if (node.getParent().getVisitCount() > 0)
+            exploration = Math.sqrt(2 * Math.log(node.getParent().getVisitCount()) / node.getVisitCount());
 
         return exploitation + c * exploration;
     }

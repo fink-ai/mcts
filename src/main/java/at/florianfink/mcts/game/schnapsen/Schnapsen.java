@@ -1,11 +1,21 @@
 package at.florianfink.mcts.game.schnapsen;
 
 import at.florianfink.mcts.game.Game;
+import at.florianfink.mcts.game.PlayerIdentifier;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
+
+    @Getter
+    @Setter
+    private PlayerIdentifier currentPlayer = PlayerIdentifier.ONE;
+
+    // TODO: pass to State as starting player?
+
     @Override
     public SchnapsenState initializeGame() {
         SchnapsenState initialState = new SchnapsenState();
@@ -33,7 +43,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     }
 
     private HashSet<SchnapsenAction> getActionsForRespondingPlayer(SchnapsenState currentState) {
-        Player activePlayer = currentState.getActivePlayer();
+        Player activePlayer = currentState.getPlayerByIdentifier(currentState.getActivePlayer()); // TODO: refactor
         HashSet<SchnapsenAction> actions = new HashSet<>();
         Card leaderCard = currentState.getLastTrick().getLeaderCard();
         if (currentState.isStockAvailable()) {
@@ -58,7 +68,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     }
 
     private HashSet<SchnapsenAction> getActionsForLeadingPlayer(SchnapsenState currentState) {
-        Player activePlayer = currentState.getActivePlayer();
+        Player activePlayer = currentState.getPlayerByIdentifier(currentState.getActivePlayer());
         ArrayList<SchnapsenAction> nonClosingActions = new ArrayList<>();
         HashSet<SchnapsenAction> actions = new HashSet<>();
         activePlayer.getCards().forEach(card -> {
@@ -81,7 +91,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     @Override
     public SchnapsenState getNextState(SchnapsenState currentState, SchnapsenAction action) {
         SchnapsenState newState = new SchnapsenState(currentState);
-        Player activePlayer = newState.getActivePlayer();
+        Player activePlayer = newState.getPlayerByIdentifier(newState.getActivePlayer());
 
         ArrayList<Trick> history = newState.getHistory();
         if (newState.isActivePlayerLeading()) {
@@ -95,7 +105,11 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
                     action.getMeld(),
                     action.isCloseStock()
             ));
-            if (action.isCloseStock()) newState.setStockClosedBy(activePlayer.getIdentifier());
+            if (action.isCloseStock()) {
+                newState.setStockClosedBy(activePlayer.getIdentifier());
+                int opponentScore = newState.getScore(newState.getOpponent(activePlayer));
+                newState.setOpponentScoreAtStockClosing(opponentScore);
+            }
         } else {
             Trick lastTrick = newState.getLastTrick();
             Trick completedTrick = lastTrick.toBuilder()
@@ -123,16 +137,23 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
 
         double absoluteReward = getAbsoluteReward(state);
 
-        // TODO: this is only viable for calculation of first move
-        return state.getWinner().getIdentifier() == Player.PlayerIdentifier.TWO
-                ? absoluteReward
-                : -absoluteReward;
+        return state.getWinner().getIdentifier() == currentPlayer
+                ? -absoluteReward
+                : absoluteReward;
     }
 
     public double getAbsoluteReward(SchnapsenState state) {
-        if (state.getStockClosedBy() != null) return 2; //TODO: make this accurate
+        Player winner = state.getWinner();
+        Player loser = state.getOpponent(winner);
 
-        int loserScore = state.getScore(state.getOpponent(state.getWinner()));
+        if (state.getStockClosedBy() == loser.getIdentifier()) {
+            if (state.getOpponentScoreAtStockClosing() == 0) {
+                return 3;
+            }
+            return 2;
+        }
+
+        int loserScore = state.getScore(loser);
         if (loserScore == 0) return 3;
         if (loserScore < 33) return 2;
 

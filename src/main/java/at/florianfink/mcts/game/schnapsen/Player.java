@@ -1,15 +1,13 @@
 package at.florianfink.mcts.game.schnapsen;
 
+import at.florianfink.mcts.game.PlayerIdentifier;
 import lombok.Data;
 
 import java.util.HashSet;
 
 @Data
 public class Player {
-    public enum PlayerIdentifier {
-        ONE,
-        TWO
-    }
+
 
     private HashSet<Card> cards = new HashSet<>();
 

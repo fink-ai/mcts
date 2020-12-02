@@ -11,4 +11,6 @@ public interface Game<TState extends State, TAction extends Action> {
     TState getNextState(TState currentState, TAction action);
 
     double getReward(TState state);
+
+    PlayerIdentifier getCurrentPlayer();
 }

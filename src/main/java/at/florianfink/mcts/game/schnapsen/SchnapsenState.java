@@ -1,5 +1,6 @@
 package at.florianfink.mcts.game.schnapsen;
 
+import at.florianfink.mcts.game.PlayerIdentifier;
 import at.florianfink.mcts.game.State;
 import lombok.*;
 
@@ -14,37 +15,37 @@ public class SchnapsenState implements State {
 
     private ArrayList<Card> stockCards = new ArrayList<>();
 
-    private Player.PlayerIdentifier stockClosedBy = null;
+    private PlayerIdentifier stockClosedBy = null;
+    private int opponentScoreAtStockClosing = 0;
     private Card.Suit trumpSuit = null;
 
-    private Player playerOne = new Player(Player.PlayerIdentifier.ONE);
-    private Player playerTwo = new Player(Player.PlayerIdentifier.TWO);
+    private Player playerOne = new Player(PlayerIdentifier.ONE);
+    private Player playerTwo = new Player(PlayerIdentifier.TWO);
 
     private ArrayList<Trick> history = new ArrayList<>();
 
     public SchnapsenState(SchnapsenState schnapsenState) {
         stockCards = new ArrayList<>(schnapsenState.stockCards);
         stockClosedBy = schnapsenState.stockClosedBy;
+        opponentScoreAtStockClosing = schnapsenState.opponentScoreAtStockClosing;
         trumpSuit = schnapsenState.trumpSuit;
 
-        playerOne = new Player(Player.PlayerIdentifier.ONE);
+        playerOne = new Player(PlayerIdentifier.ONE);
         playerOne.getCards().addAll(schnapsenState.playerOne.getCards());
-        playerTwo = new Player(Player.PlayerIdentifier.TWO);
+        playerTwo = new Player(PlayerIdentifier.TWO);
         playerTwo.getCards().addAll(schnapsenState.playerTwo.getCards());
 
         history = new ArrayList<>(schnapsenState.history);
     }
 
-    public Player getActivePlayer() {
+    public PlayerIdentifier getActivePlayer() {
         if (history.isEmpty()) {
-            return playerOne; // TODO: possible to start game with player 2 active?
+            return PlayerIdentifier.ONE; // TODO: possible to start game with player 2 active?
         }
         Trick lastTrick = getLastTrick();
-        return getPlayerByIdentifier(
-                lastTrick.getLeaderCard() == null || lastTrick.getResponderCard() != null
-                        ? lastTrick.getLeader()
-                        : lastTrick.getResponder()
-        );
+        return lastTrick.getLeaderCard() == null || lastTrick.getResponderCard() != null
+                ? lastTrick.getLeader()
+                : lastTrick.getResponder();
     }
 
     public Trick getLastTrick() {
@@ -78,7 +79,7 @@ public class SchnapsenState implements State {
             }
         }
 
-        Player activePlayer = getActivePlayer();
+        Player activePlayer = getPlayerByIdentifier(getActivePlayer());
         if (getScore(activePlayer) >= 66) {
             return activePlayer;
         }
@@ -101,15 +102,15 @@ public class SchnapsenState implements State {
         return getWinner() != null;
     }
 
-    public Player getPlayerByIdentifier(Player.PlayerIdentifier playerIdentifier) {
-        return playerIdentifier == Player.PlayerIdentifier.ONE
+    public Player getPlayerByIdentifier(PlayerIdentifier playerIdentifier) {
+        return playerIdentifier == PlayerIdentifier.ONE
                 ? playerOne
                 : playerTwo;
     }
 
     public Player getOpponent(Player player) {
-        if (player.getIdentifier() == Player.PlayerIdentifier.ONE) return playerTwo;
-        if (player.getIdentifier() == Player.PlayerIdentifier.TWO) return playerOne;
+        if (player.getIdentifier() == PlayerIdentifier.ONE) return playerTwo;
+        if (player.getIdentifier() == PlayerIdentifier.TWO) return playerOne;
         return null;
     }
 

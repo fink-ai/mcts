@@ -1,5 +1,6 @@
 package at.florianfink.mcts;
 
+import at.florianfink.mcts.game.PlayerIdentifier;
 import at.florianfink.mcts.game.schnapsen.Schnapsen;
 import at.florianfink.mcts.game.schnapsen.SchnapsenAction;
 import at.florianfink.mcts.game.schnapsen.SchnapsenState;
@@ -11,6 +12,11 @@ import java.util.List;
 /**
  * TODO:
  * if only one action, immediately abort
+ * refactor Player
+ * allow swapping trump card
+ * ...
+ * implement Bezique
+ * play with imperfect information
  */
 public class App {
     public static void main(String[] args) {
@@ -29,6 +35,10 @@ public class App {
                 states.add(game.getNextState(lastState, selectedAction));
                 lastState = last(states);
 
+                if (game.getCurrentPlayer() == PlayerIdentifier.ONE)
+                    game.setCurrentPlayer(PlayerIdentifier.TWO);
+                else
+                    game.setCurrentPlayer(PlayerIdentifier.ONE);
 
             } catch (Exception e) {
                 System.out.println("well ...");
