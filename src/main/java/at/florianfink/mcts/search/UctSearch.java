@@ -3,6 +3,7 @@ package at.florianfink.mcts.search;
 import at.florianfink.mcts.game.Action;
 import at.florianfink.mcts.game.Game;
 import at.florianfink.mcts.game.State;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
@@ -13,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class UctSearch<TGame extends Game<TState, TAction>, TState extends State, TAction extends Action> {
 
-    private static final double EXPLORATION_FACTOR = 1;
+    private static final double EXPLORATION_FACTOR = 3;
 
     private final TGame game;
     @Setter
@@ -24,6 +25,7 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
     @Setter
     private Random rand = new Random();
 
+    @Getter
     private UctNode<TState, TAction> root;
 
     public TAction getBestAction(TState state) {
@@ -33,12 +35,12 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
              stop > System.nanoTime(); ) { // TODO: there should be a better way to limit the time
 
             UctNode<TState, TAction> nextChild = treePolicy(root);
-            double reward = evaluator.getReward(game, nextChild.getState());
+            double reward = evaluator.getReward(game, nextChild.getState()); // TODO: pass state.activePlayer here?
 
             backupReward(nextChild, reward);
         }
 
-        return getBestChild(root, 0).getAction();
+        return selectChild(root, 0).getAction();
     }
 
     public UctNode<TState, TAction> treePolicy(UctNode<TState, TAction> node) {
@@ -48,7 +50,7 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
             }
 
             if (node.getUntriedActions().isEmpty()) {
-                node = getBestChild(node, EXPLORATION_FACTOR);
+                node = selectChild(node, EXPLORATION_FACTOR);
             } else {
                 node = expandNode(node);
             }
@@ -57,7 +59,7 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
         return node;
     }
 
-    public UctNode<TState, TAction> getBestChild(UctNode<TState, TAction> node, double c) {
+    public UctNode<TState, TAction> selectChild(UctNode<TState, TAction> node, double c) {
         return node.getChildren().stream()
                 .max(Comparator.comparing(child -> ucb(child, c))).orElse(null);
     }
@@ -93,7 +95,8 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
 
             node.setExpectedReward(node.getCumulativeReward() / node.getVisitCount());
 
-            reward = -reward; // parent node is opponent
+            if (node.getParent() != null && node.getParent().getState().getActivePlayer() != node.getState().getActivePlayer())
+                reward = -reward; // parent node is opponent
             node = node.getParent();
         }
     }

@@ -29,17 +29,25 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
             drawCards(initialState);
         }
 
+        exchangeTrumpIfPossible(initialState);
         return initialState;
     }
 
     @Override
     public Set<SchnapsenAction> getAllowedActions(SchnapsenState currentState) {
+        Set<SchnapsenAction> actions;
+
         if (currentState.isActivePlayerLeading()) {
-            return getActionsForLeadingPlayer(currentState);
+            actions = getActionsForLeadingPlayer(currentState);
 
         } else {
-            return getActionsForRespondingPlayer(currentState);
+            actions = getActionsForRespondingPlayer(currentState);
         }
+
+        if (actions.isEmpty())
+            throw new IllegalStateException("There should always be at least one action available");
+
+        return actions;
     }
 
     private HashSet<SchnapsenAction> getActionsForRespondingPlayer(SchnapsenState currentState) {
@@ -91,14 +99,16 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     @Override
     public SchnapsenState getNextState(SchnapsenState currentState, SchnapsenAction action) {
         SchnapsenState newState = new SchnapsenState(currentState);
-        Player activePlayer = newState.getPlayerByIdentifier(newState.getActivePlayer());
+
+        PlayerIdentifier previousPlayer = currentState.getActivePlayer();
+        PlayerIdentifier previousOpponent = newState.getOpponent(previousPlayer);
 
         ArrayList<Trick> history = newState.getHistory();
         if (newState.isActivePlayerLeading()) {
-            // TODO exchange trump card if possible
+            newState.setActivePlayer(previousOpponent);
             history.add(new Trick(
-                    activePlayer.getIdentifier(),
-                    newState.getOpponent(activePlayer).getIdentifier(),
+                    previousPlayer,
+                    previousOpponent,
                     null,
                     action.getPlayCard(),
                     null,
@@ -106,8 +116,8 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
                     action.isCloseStock()
             ));
             if (action.isCloseStock()) {
-                newState.setStockClosedBy(activePlayer.getIdentifier());
-                int opponentScore = newState.getScore(newState.getOpponent(activePlayer));
+                newState.setStockClosedBy(previousPlayer);
+                int opponentScore = newState.getScore(previousOpponent);
                 newState.setOpponentScoreAtStockClosing(opponentScore);
             }
         } else {
@@ -115,20 +125,39 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
             Trick completedTrick = lastTrick.toBuilder()
                     .responderCard(action.getPlayCard())
                     .winner(action.getPlayCard().beatsPlayedCard(lastTrick.getLeaderCard(), newState.getTrumpSuit())
-                            ? activePlayer.getIdentifier()
-                            : newState.getOpponent(activePlayer).getIdentifier()
+                            ? previousPlayer
+                            : previousOpponent
                     )
                     .build();
             history.remove(history.size() - 1);
             history.add(completedTrick);
+
+            newState.setActivePlayer(completedTrick.getWinner());
 
             if (newState.isStockAvailable()) {
                 drawCards(newState);
             }
         }
 
-        activePlayer.getCards().remove(action.getPlayCard());
+
+        newState.getPlayerByIdentifier(previousPlayer).getCards().remove(action.getPlayCard()); // TODO: should happen before drawing?
+        exchangeTrumpIfPossible(newState);
         return newState;
+    }
+
+    private void exchangeTrumpIfPossible(SchnapsenState state) {
+        if (!state.isActivePlayerLeading()
+                || state.getStockClosedBy() != null
+                || state.getStockCards().size() <= 2
+        ) return;
+
+        Player activePlayer = state.getPlayerByIdentifier(state.getActivePlayer());
+        Card trumpTwo = new Card(state.getTrumpSuit(), 2);
+        ArrayList<Card> stockCards = state.getStockCards();
+        if (activePlayer.getCards().remove(trumpTwo)) {
+            activePlayer.getCards().add(stockCards.remove(stockCards.size() - 1));
+            stockCards.add(trumpTwo);
+        }
     }
 
     @Override
@@ -137,16 +166,15 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
 
         double absoluteReward = getAbsoluteReward(state);
 
-        return state.getWinner().getIdentifier() == currentPlayer
-                ? -absoluteReward
-                : absoluteReward;
+        return state.getWinner() == currentPlayer
+                ? absoluteReward
+                : -absoluteReward;
     }
 
     public double getAbsoluteReward(SchnapsenState state) {
-        Player winner = state.getWinner();
-        Player loser = state.getOpponent(winner);
+        PlayerIdentifier loser = state.getOpponent(state.getWinner());
 
-        if (state.getStockClosedBy() == loser.getIdentifier()) {
+        if (state.getStockClosedBy() == loser) {
             if (state.getOpponentScoreAtStockClosing() == 0) {
                 return 3;
             }

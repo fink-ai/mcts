@@ -14,11 +14,11 @@ import java.util.ArrayList;
 public class SchnapsenState implements State {
 
     private ArrayList<Card> stockCards = new ArrayList<>();
-
     private PlayerIdentifier stockClosedBy = null;
     private int opponentScoreAtStockClosing = 0;
     private Card.Suit trumpSuit = null;
 
+    private PlayerIdentifier activePlayer = PlayerIdentifier.ONE;
     private Player playerOne = new Player(PlayerIdentifier.ONE);
     private Player playerTwo = new Player(PlayerIdentifier.TWO);
 
@@ -29,6 +29,7 @@ public class SchnapsenState implements State {
         stockClosedBy = schnapsenState.stockClosedBy;
         opponentScoreAtStockClosing = schnapsenState.opponentScoreAtStockClosing;
         trumpSuit = schnapsenState.trumpSuit;
+        activePlayer = null; // to be set by Schnapsen::getNextState
 
         playerOne = new Player(PlayerIdentifier.ONE);
         playerOne.getCards().addAll(schnapsenState.playerOne.getCards());
@@ -38,24 +39,14 @@ public class SchnapsenState implements State {
         history = new ArrayList<>(schnapsenState.history);
     }
 
-    public PlayerIdentifier getActivePlayer() {
-        if (history.isEmpty()) {
-            return PlayerIdentifier.ONE; // TODO: possible to start game with player 2 active?
-        }
-        Trick lastTrick = getLastTrick();
-        return lastTrick.getLeaderCard() == null || lastTrick.getResponderCard() != null
-                ? lastTrick.getLeader()
-                : lastTrick.getResponder();
-    }
-
     public Trick getLastTrick() {
         return history.get(history.size() - 1);
     }
 
-    public int getScore(Player player) {
+    public int getScore(PlayerIdentifier playerIdentifier) {
         return history.stream()
                 .filter(trick ->
-                        trick.getWinner() == player.getIdentifier()
+                        trick.getWinner() == playerIdentifier
                                 && trick.getLeaderCard() != null
                                 && trick.getResponderCard() != null
                 )
@@ -65,30 +56,26 @@ public class SchnapsenState implements State {
                 )
                 .mapToInt(Integer::valueOf).sum()
                 + history.stream()
-                .filter(trick -> trick.getLeader() == player.getIdentifier())
+                .filter(trick -> trick.getLeader() == playerIdentifier)
                 .map(trick -> getValueForMeld(trick.getMeld()))
                 .mapToInt(Integer::valueOf).sum();
     }
 
-    public Player getWinner() {
+    public PlayerIdentifier getWinner() {
         if (playerOne.getCards().isEmpty() && playerTwo.getCards().isEmpty()) {
             if (stockCards.isEmpty())
-                return getPlayerByIdentifier(getLastTrick().getWinner());
-            if (stockClosedBy != null && getScore(getPlayerByIdentifier(stockClosedBy)) < 66) {
-                return getOpponent(getPlayerByIdentifier(stockClosedBy));
+                return getLastTrick().getWinner();
+            if (stockClosedBy != null && getScore(stockClosedBy) < 66) {
+                return getOpponent(stockClosedBy);
             }
         }
 
-        Player activePlayer = getPlayerByIdentifier(getActivePlayer());
+        PlayerIdentifier activePlayer = getActivePlayer();
         if (getScore(activePlayer) >= 66) {
             return activePlayer;
         }
 
         return null;
-    }
-
-    public Card getStockTrumpCard() {
-        return stockCards.get(stockCards.size() - 1);
     }
 
     public int getValueForMeld(Meld meld) {
@@ -108,9 +95,9 @@ public class SchnapsenState implements State {
                 : playerTwo;
     }
 
-    public Player getOpponent(Player player) {
-        if (player.getIdentifier() == PlayerIdentifier.ONE) return playerTwo;
-        if (player.getIdentifier() == PlayerIdentifier.TWO) return playerOne;
+    public PlayerIdentifier getOpponent(PlayerIdentifier playerIdentifier) {
+        if (playerIdentifier == PlayerIdentifier.ONE) return PlayerIdentifier.TWO;
+        if (playerIdentifier == PlayerIdentifier.TWO) return PlayerIdentifier.ONE;
         return null;
     }
 
