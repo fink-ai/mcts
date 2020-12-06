@@ -2,19 +2,11 @@ package at.florianfink.mcts.game.schnapsen;
 
 import at.florianfink.mcts.game.Game;
 import at.florianfink.mcts.game.PlayerIdentifier;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
-
-    @Getter
-    @Setter
-    private PlayerIdentifier currentPlayer = PlayerIdentifier.ONE;
-
-    // TODO: pass to State as starting player?
 
     @Override
     public SchnapsenState initializeGame() {
@@ -51,17 +43,17 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     }
 
     private HashSet<SchnapsenAction> getActionsForRespondingPlayer(SchnapsenState currentState) {
-        Player activePlayer = currentState.getPlayerByIdentifier(currentState.getActivePlayer()); // TODO: refactor
+        PlayerIdentifier activePlayer = currentState.getActivePlayer();
         HashSet<SchnapsenAction> actions = new HashSet<>();
         Card leaderCard = currentState.getLastTrick().getLeaderCard();
         if (currentState.isStockAvailable()) {
-            activePlayer.getCards().forEach(card -> actions.add(new SchnapsenAction(card)));
+            currentState.getCards(activePlayer).forEach(card -> actions.add(new SchnapsenAction(card)));
         } else {
-            Set<Card> suitableCards = activePlayer.getCards().stream()
+            Set<Card> suitableCards = currentState.getCards(activePlayer).stream()
                     .filter(card -> card.getSuit() == leaderCard.getSuit())
                     .collect(Collectors.toSet());
             if (suitableCards.isEmpty())
-                suitableCards = activePlayer.getCards();
+                suitableCards = currentState.getCards(activePlayer);
 
             Set<Card> winningCards = suitableCards.stream()
                     .filter(card -> card.beatsPlayedCard(leaderCard, currentState.getTrumpSuit()))
@@ -76,15 +68,15 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     }
 
     private HashSet<SchnapsenAction> getActionsForLeadingPlayer(SchnapsenState currentState) {
-        Player activePlayer = currentState.getPlayerByIdentifier(currentState.getActivePlayer());
+        PlayerIdentifier activePlayer = currentState.getActivePlayer();
         ArrayList<SchnapsenAction> nonClosingActions = new ArrayList<>();
         HashSet<SchnapsenAction> actions = new HashSet<>();
-        activePlayer.getCards().forEach(card -> {
+        currentState.getCards(activePlayer).forEach(card -> {
             SchnapsenAction action = new SchnapsenAction();
             action.setPlayCard(card);
             Card.Suit suit = card.getSuit();
-            if ((card.getValue() == 3 && activePlayer.getCards().contains(new Card(suit, 4)))
-                    || (card.getValue() == 4 && activePlayer.getCards().contains(new Card(suit, 3)))) {
+            if ((card.getValue() == 3 && currentState.getCards(activePlayer).contains(new Card(suit, 4)))
+                    || (card.getValue() == 4 && currentState.getCards(activePlayer).contains(new Card(suit, 3)))) {
                 action.setMeld(new Meld(suit));
             }
             nonClosingActions.add(action);
@@ -101,7 +93,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
         SchnapsenState newState = new SchnapsenState(currentState);
 
         PlayerIdentifier previousPlayer = currentState.getActivePlayer();
-        PlayerIdentifier previousOpponent = newState.getOpponent(previousPlayer);
+        PlayerIdentifier previousOpponent = previousPlayer.getOpponent();
 
         ArrayList<Trick> history = newState.getHistory();
         if (newState.isActivePlayerLeading()) {
@@ -140,7 +132,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
         }
 
 
-        newState.getPlayerByIdentifier(previousPlayer).getCards().remove(action.getPlayCard()); // TODO: should happen before drawing?
+        newState.getCards(previousPlayer).remove(action.getPlayCard());
         exchangeTrumpIfPossible(newState);
         return newState;
     }
@@ -151,11 +143,11 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
                 || state.getStockCards().size() <= 2
         ) return;
 
-        Player activePlayer = state.getPlayerByIdentifier(state.getActivePlayer());
+        PlayerIdentifier activePlayer = state.getActivePlayer();
         Card trumpTwo = new Card(state.getTrumpSuit(), 2);
         ArrayList<Card> stockCards = state.getStockCards();
-        if (activePlayer.getCards().remove(trumpTwo)) {
-            activePlayer.getCards().add(stockCards.remove(stockCards.size() - 1));
+        if (state.getCards(activePlayer).remove(trumpTwo)) {
+            state.getCards(activePlayer).add(stockCards.remove(stockCards.size() - 1));
             stockCards.add(trumpTwo);
         }
     }
@@ -164,17 +156,9 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     public double getReward(SchnapsenState state) {
         assert state.isTerminal();
 
-        double absoluteReward = getAbsoluteReward(state);
+        PlayerIdentifier loser = state.getWinner().getOpponent();
 
-        return state.getWinner() == currentPlayer
-                ? absoluteReward
-                : -absoluteReward;
-    }
-
-    public double getAbsoluteReward(SchnapsenState state) {
-        PlayerIdentifier loser = state.getOpponent(state.getWinner());
-
-        if (state.getStockClosedBy() == loser) {
+        if (state.getStockClosedBy().equals(loser)) {
             if (state.getOpponentScoreAtStockClosing() == 0) {
                 return 3;
             }
@@ -186,12 +170,13 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
         if (loserScore < 33) return 2;
 
         return 1;
+
     }
 
     private void drawCards(SchnapsenState state) {
         Card top = state.getStockCards().remove(0);
-        state.getPlayerOne().getCards().add(top);
+        state.getCards(PlayerIdentifier.ONE).add(top);
         top = state.getStockCards().remove(0);
-        state.getPlayerTwo().getCards().add(top);
+        state.getCards(PlayerIdentifier.TWO).add(top);
     }
 }

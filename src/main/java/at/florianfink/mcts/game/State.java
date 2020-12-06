@@ -4,4 +4,8 @@ public interface State {
     boolean isTerminal();
 
     PlayerIdentifier getActivePlayer();
+
+    PlayerIdentifier getWinner();
+
+
 }

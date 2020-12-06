@@ -11,10 +11,9 @@ import java.util.List;
 
 /**
  * TODO:
- * if only one action, immediately abort
+ * if only one action, immediately select without search
  * don't throw away tree after each call to uct
- *
- * refactor Player
+ * <p>
  * ...
  * implement Bezique
  * play with imperfect information
@@ -38,8 +37,7 @@ public class App {
                 states.add(game.getNextState(lastState, selectedAction));
                 lastState = last(states);
 
-                game.setCurrentPlayer(lastState.getActivePlayer()); // TODO: we don't have to do this here
-
+                System.out.println("next move starting ...");
             } catch (Exception e) {
                 System.out.println("well ...");
             }

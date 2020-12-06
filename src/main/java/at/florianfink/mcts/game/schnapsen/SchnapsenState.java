@@ -5,6 +5,11 @@ import at.florianfink.mcts.game.State;
 import lombok.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
+
+import static at.florianfink.mcts.game.PlayerIdentifier.ONE;
+import static at.florianfink.mcts.game.PlayerIdentifier.TWO;
 
 @Data
 @Builder(toBuilder = true)
@@ -18,9 +23,9 @@ public class SchnapsenState implements State {
     private int opponentScoreAtStockClosing = 0;
     private Card.Suit trumpSuit = null;
 
-    private PlayerIdentifier activePlayer = PlayerIdentifier.ONE;
-    private Player playerOne = new Player(PlayerIdentifier.ONE);
-    private Player playerTwo = new Player(PlayerIdentifier.TWO);
+    private PlayerIdentifier activePlayer = ONE;
+    private Set<Card> playerOneCards = new HashSet<>();
+    private Set<Card> playerTwoCards = new HashSet<>();
 
     private ArrayList<Trick> history = new ArrayList<>();
 
@@ -31,10 +36,8 @@ public class SchnapsenState implements State {
         trumpSuit = schnapsenState.trumpSuit;
         activePlayer = null; // to be set by Schnapsen::getNextState
 
-        playerOne = new Player(PlayerIdentifier.ONE);
-        playerOne.getCards().addAll(schnapsenState.playerOne.getCards());
-        playerTwo = new Player(PlayerIdentifier.TWO);
-        playerTwo.getCards().addAll(schnapsenState.playerTwo.getCards());
+        playerOneCards.addAll(schnapsenState.getCards(ONE));
+        playerTwoCards.addAll(schnapsenState.getCards(TWO));
 
         history = new ArrayList<>(schnapsenState.history);
     }
@@ -46,7 +49,7 @@ public class SchnapsenState implements State {
     public int getScore(PlayerIdentifier playerIdentifier) {
         return history.stream()
                 .filter(trick ->
-                        trick.getWinner() == playerIdentifier
+                        trick.getWinner().equals(playerIdentifier)
                                 && trick.getLeaderCard() != null
                                 && trick.getResponderCard() != null
                 )
@@ -56,17 +59,17 @@ public class SchnapsenState implements State {
                 )
                 .mapToInt(Integer::valueOf).sum()
                 + history.stream()
-                .filter(trick -> trick.getLeader() == playerIdentifier)
+                .filter(trick -> trick.getLeader().equals(playerIdentifier))
                 .map(trick -> getValueForMeld(trick.getMeld()))
                 .mapToInt(Integer::valueOf).sum();
     }
 
     public PlayerIdentifier getWinner() {
-        if (playerOne.getCards().isEmpty() && playerTwo.getCards().isEmpty()) {
+        if (getCards(ONE).isEmpty() && getCards(TWO).isEmpty()) {
             if (stockCards.isEmpty())
                 return getLastTrick().getWinner();
             if (stockClosedBy != null && getScore(stockClosedBy) < 66) {
-                return getOpponent(stockClosedBy);
+                return stockClosedBy.getOpponent();
             }
         }
 
@@ -89,23 +92,18 @@ public class SchnapsenState implements State {
         return getWinner() != null;
     }
 
-    public Player getPlayerByIdentifier(PlayerIdentifier playerIdentifier) {
-        return playerIdentifier == PlayerIdentifier.ONE
-                ? playerOne
-                : playerTwo;
-    }
-
-    public PlayerIdentifier getOpponent(PlayerIdentifier playerIdentifier) {
-        if (playerIdentifier == PlayerIdentifier.ONE) return PlayerIdentifier.TWO;
-        if (playerIdentifier == PlayerIdentifier.TWO) return PlayerIdentifier.ONE;
-        return null;
-    }
-
     public boolean isStockAvailable() {
         return stockClosedBy == null && !stockCards.isEmpty();
     }
 
     public boolean isActivePlayerLeading() {
         return history.isEmpty() || getLastTrick().getWinner() != null;
+    }
+
+    public Set<Card> getCards(PlayerIdentifier player) {
+        if (player.equals(ONE))
+            return playerOneCards;
+        else
+            return playerTwoCards;
     }
 }

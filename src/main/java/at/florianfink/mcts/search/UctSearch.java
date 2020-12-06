@@ -35,7 +35,7 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
              stop > System.nanoTime(); ) { // TODO: there should be a better way to limit the time
 
             UctNode<TState, TAction> nextChild = treePolicy(root);
-            double reward = evaluator.getReward(game, nextChild.getState()); // TODO: pass state.activePlayer here?
+            double reward = evaluator.getReward(game, nextChild.getState(), state.getActivePlayer());
 
             backupReward(nextChild, reward);
         }

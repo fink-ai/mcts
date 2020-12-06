@@ -2,6 +2,7 @@ package at.florianfink.mcts.search;
 
 import at.florianfink.mcts.game.Action;
 import at.florianfink.mcts.game.Game;
+import at.florianfink.mcts.game.PlayerIdentifier;
 import at.florianfink.mcts.game.State;
 import lombok.Setter;
 
@@ -14,7 +15,7 @@ public class RandomPolicyEvaluator<TGame extends Game<TState, TAction>, TState e
     @Setter
     private Random rand = new Random();
 
-    public double getReward(TGame game, TState state) {
+    public double getReward(TGame game, TState state, PlayerIdentifier player) {
         while (!state.isTerminal()) {
             Set<TAction> allowedActions = game.getAllowedActions(state);
             TAction randomAction = allowedActions.stream()
@@ -23,6 +24,7 @@ public class RandomPolicyEvaluator<TGame extends Game<TState, TAction>, TState e
             state = game.getNextState(state, randomAction);
         }
 
-        return game.getReward(state);
+        double reward = game.getReward(state);
+        return state.getWinner().equals(state.getActivePlayer()) ? -reward : reward;
     }
 }
