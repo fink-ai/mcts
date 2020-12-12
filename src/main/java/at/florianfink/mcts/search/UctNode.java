@@ -18,7 +18,6 @@ public class UctNode<TState extends State, TAction extends Action> {
     private final TAction action;
     private final UctNode<TState, TAction> parent;
 
-    private Set<TAction> untriedActions = null;
     private final Set<UctNode<TState, TAction>> children = new HashSet<>();
 
     private int visitCount = 0;

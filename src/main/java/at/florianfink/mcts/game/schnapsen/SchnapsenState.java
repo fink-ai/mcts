@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static at.florianfink.mcts.game.PlayerIdentifier.ONE;
@@ -27,7 +28,10 @@ public class SchnapsenState implements State {
     private Set<Card> playerOneCards = new HashSet<>();
     private Set<Card> playerTwoCards = new HashSet<>();
 
-    private ArrayList<Trick> history = new ArrayList<>();
+    private Set<Card> playerOneHiddenCards = new HashSet<>();
+    private Set<Card> playerTwoHiddenCards = new HashSet<>();
+
+    private List<Trick> history = new ArrayList<>();
 
     public SchnapsenState(SchnapsenState schnapsenState) {
         stockCards = new ArrayList<>(schnapsenState.stockCards);
@@ -39,6 +43,9 @@ public class SchnapsenState implements State {
         playerOneCards.addAll(schnapsenState.getCards(ONE));
         playerTwoCards.addAll(schnapsenState.getCards(TWO));
 
+        playerOneHiddenCards.addAll(schnapsenState.getHiddenCards(ONE));
+        playerTwoHiddenCards.addAll(schnapsenState.getHiddenCards(TWO));
+
         history = new ArrayList<>(schnapsenState.history);
     }
 
@@ -49,7 +56,7 @@ public class SchnapsenState implements State {
     public int getScore(PlayerIdentifier playerIdentifier) {
         return history.stream()
                 .filter(trick ->
-                        trick.getWinner().equals(playerIdentifier)
+                        playerIdentifier.equals(trick.getWinner())
                                 && trick.getLeaderCard() != null
                                 && trick.getResponderCard() != null
                 )
@@ -105,5 +112,13 @@ public class SchnapsenState implements State {
             return playerOneCards;
         else
             return playerTwoCards;
+    }
+
+    public Set<Card> getHiddenCards(PlayerIdentifier player) {
+        if (player.equals(ONE)) {
+            return playerOneHiddenCards;
+        } else {
+            return playerTwoHiddenCards;
+        }
     }
 }

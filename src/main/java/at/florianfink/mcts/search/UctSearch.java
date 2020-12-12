@@ -9,7 +9,9 @@ import lombok.Setter;
 
 import java.util.Comparator;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class UctSearch<TGame extends Game<TState, TAction>, TState extends State, TAction extends Action> {
@@ -29,6 +31,14 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
     private UctNode<TState, TAction> root;
 
     public TAction getBestAction(TState state) {
+        // TODO set rand of evaluator
+        //  in for:
+        //      create copy of state
+        //      determinization: randomize this instance
+        //      run treepolicy on root (with determinization as state)
+        //      run evaluator on determinized State
+        //  ^this might not actually work
+        //      solution: don't store untried actions but instead infer them from child nodes
         root = new UctNode<>(state, null, null);
 
         for (long stop = System.nanoTime() + TimeUnit.SECONDS.toNanos(secondsToSearch);
@@ -45,14 +55,17 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
 
     public UctNode<TState, TAction> treePolicy(UctNode<TState, TAction> node) {
         while (!node.getState().isTerminal()) {
-            if (node.getUntriedActions() == null) {
-                node.setUntriedActions(game.getAllowedActions(node.getState()));
-            }
 
-            if (node.getUntriedActions().isEmpty()) {
+            Set<TAction> untriedActions = game.getAllowedActions(node.getState());
+            untriedActions.removeAll(node.getChildren().stream()
+                    .map(UctNode::getAction)
+                    .collect(Collectors.toList())
+            );
+
+            if (untriedActions.isEmpty()) {
                 node = selectChild(node, EXPLORATION_FACTOR);
             } else {
-                node = expandNode(node);
+                node = expandNode(node, untriedActions);
             }
         }
 
@@ -73,16 +86,15 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
         return exploitation + c * exploration;
     }
 
-    public UctNode<TState, TAction> expandNode(UctNode<TState, TAction> node) {
-        TAction randomAction = node.getUntriedActions().stream()
-                .skip(rand.nextInt(node.getUntriedActions().size())).findFirst().orElse(null);
+    public UctNode<TState, TAction> expandNode(UctNode<TState, TAction> node, Set<TAction> untriedActions) {
+        TAction randomAction = untriedActions.stream()
+                .skip(rand.nextInt(untriedActions.size())).findFirst().orElse(null);
 
         UctNode<TState, TAction> newChild = new UctNode<>(
                 game.getNextState(node.getState(), randomAction),
                 randomAction,
                 node
         );
-        node.getUntriedActions().remove(randomAction);
         node.getChildren().add(newChild);
 
         return newChild;

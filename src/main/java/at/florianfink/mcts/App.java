@@ -13,7 +13,7 @@ import java.util.List;
  * TODO:
  * if only one action, immediately select without search
  * don't throw away tree after each call to uct
- * <p>
+ * Schnapsen can end with meld
  * ...
  * implement Bezique
  * play with imperfect information

@@ -1,13 +1,14 @@
 package at.florianfink.mcts.game.schnapsen;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 @Data
+@EqualsAndHashCode
 public class Card {
 
     enum Suit {
@@ -29,20 +30,6 @@ public class Card {
         );
 
         return deck;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Card card = (Card) o;
-        return value == card.value &&
-                suit == card.suit;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(suit, value);
     }
 
     public boolean beatsPlayedCard(Card playedCard, Suit trumpSuit) {

@@ -6,6 +6,9 @@ import at.florianfink.mcts.game.PlayerIdentifier;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static at.florianfink.mcts.game.PlayerIdentifier.ONE;
+import static at.florianfink.mcts.game.PlayerIdentifier.TWO;
+
 public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
 
     @Override
@@ -21,8 +24,17 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
             drawCards(initialState);
         }
 
+        initializeHiddenCards(initialState, ONE);
+        initializeHiddenCards(initialState, TWO);
+
         exchangeTrumpIfPossible(initialState);
         return initialState;
+    }
+
+    private void initializeHiddenCards(SchnapsenState state, PlayerIdentifier player) {
+        state.getHiddenCards(player).addAll(state.getCards(player.getOpponent()));
+        state.getHiddenCards(player).addAll(state.getStockCards());
+        state.getHiddenCards(player).remove(state.getStockCards().get(state.getStockCards().size() - 1));
     }
 
     @Override
@@ -95,7 +107,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
         PlayerIdentifier previousPlayer = currentState.getActivePlayer();
         PlayerIdentifier previousOpponent = previousPlayer.getOpponent();
 
-        ArrayList<Trick> history = newState.getHistory();
+        List<Trick> history = newState.getHistory();
         if (newState.isActivePlayerLeading()) {
             newState.setActivePlayer(previousOpponent);
             history.add(new Trick(
@@ -112,6 +124,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
                 int opponentScore = newState.getScore(previousOpponent);
                 newState.setOpponentScoreAtStockClosing(opponentScore);
             }
+            // TODO: remove meld card from hiddenCards
         } else {
             Trick lastTrick = newState.getLastTrick();
             Trick completedTrick = lastTrick.toBuilder()
@@ -133,6 +146,8 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
 
 
         newState.getCards(previousPlayer).remove(action.getPlayCard());
+        newState.getHiddenCards(previousOpponent).remove(action.getPlayCard());
+
         exchangeTrumpIfPossible(newState);
         return newState;
     }
@@ -149,6 +164,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
         if (state.getCards(activePlayer).remove(trumpTwo)) {
             state.getCards(activePlayer).add(stockCards.remove(stockCards.size() - 1));
             stockCards.add(trumpTwo);
+            state.getHiddenCards(activePlayer.getOpponent()).remove(trumpTwo);
         }
     }
 
@@ -158,7 +174,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
 
         PlayerIdentifier loser = state.getWinner().getOpponent();
 
-        if (state.getStockClosedBy().equals(loser)) {
+        if (loser.equals(state.getStockClosedBy())) {
             if (state.getOpponentScoreAtStockClosing() == 0) {
                 return 3;
             }
@@ -175,8 +191,34 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
 
     private void drawCards(SchnapsenState state) {
         Card top = state.getStockCards().remove(0);
-        state.getCards(PlayerIdentifier.ONE).add(top);
+        state.getCards(ONE).add(top);
+        state.getHiddenCards(ONE).remove(top);
         top = state.getStockCards().remove(0);
-        state.getCards(PlayerIdentifier.TWO).add(top);
+        state.getCards(TWO).add(top);
+        state.getHiddenCards(TWO).remove(top);
+    }
+
+    @Override
+    public SchnapsenState determinizeHiddenInformation(SchnapsenState state, Random random) {
+        // TODO IncInf: don't create copy, instead randomize given state
+        SchnapsenState randomizedState = new SchnapsenState(state);
+        ArrayList<Card> hiddenCards = new ArrayList<>(state.getHiddenCards(state.getActivePlayer()));
+
+        Set<Card> newOpponentCards = randomizedState.getCards(state.getActivePlayer().getOpponent());
+        newOpponentCards.removeIf(hiddenCards::contains);
+        randomizedState.getStockCards().removeIf(hiddenCards::contains);
+
+        Collections.shuffle(hiddenCards, random);
+
+        for (int i = newOpponentCards.size(); i < state.getCards(state.getActivePlayer().getOpponent()).size(); i++) {
+            newOpponentCards.add(hiddenCards.remove(0));
+        }
+        for (int i = randomizedState.getStockCards().size(); i < state.getStockCards().size(); i++) {
+            randomizedState.getStockCards().add(0, hiddenCards.remove(0));
+        }
+
+        assert hiddenCards.isEmpty();
+
+        return randomizedState;
     }
 }

@@ -1,5 +1,6 @@
 package at.florianfink.mcts.game;
 
+import java.util.Random;
 import java.util.Set;
 
 public interface Game<TState extends State, TAction extends Action> {
@@ -11,4 +12,6 @@ public interface Game<TState extends State, TAction extends Action> {
     TState getNextState(TState currentState, TAction action);
 
     double getReward(TState state);
+
+    TState determinizeHiddenInformation(TState state, Random random);
 }

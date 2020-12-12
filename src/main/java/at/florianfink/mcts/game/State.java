@@ -7,5 +7,4 @@ public interface State {
 
     PlayerIdentifier getWinner();
 
-
 }

@@ -8,6 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @With
+@EqualsAndHashCode
 public class SchnapsenAction implements Action {
     private Card playCard;
     private Meld meld;
