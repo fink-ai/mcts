@@ -14,4 +14,6 @@ public interface Game<TState extends State, TAction extends Action> {
     double getReward(TState state);
 
     TState determinizeHiddenInformation(TState state, Random random);
+
+    TState cloneState(TState state);
 }

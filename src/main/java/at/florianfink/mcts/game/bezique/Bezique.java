@@ -32,4 +32,9 @@ public class Bezique implements Game { // TODO parameterize
     public State determinizeHiddenInformation(State state, Random random) {
         return null;
     }
+
+    @Override
+    public State cloneState(State state) {
+        return null;
+    }
 }

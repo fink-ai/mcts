@@ -34,11 +34,11 @@ public class SchnapsenState implements State {
     private List<Trick> history = new ArrayList<>();
 
     public SchnapsenState(SchnapsenState schnapsenState) {
-        stockCards = new ArrayList<>(schnapsenState.stockCards);
+        stockCards.addAll(schnapsenState.stockCards);
         stockClosedBy = schnapsenState.stockClosedBy;
         opponentScoreAtStockClosing = schnapsenState.opponentScoreAtStockClosing;
         trumpSuit = schnapsenState.trumpSuit;
-        activePlayer = null; // to be set by Schnapsen::getNextState
+        activePlayer = schnapsenState.activePlayer;
 
         playerOneCards.addAll(schnapsenState.getCards(ONE));
         playerTwoCards.addAll(schnapsenState.getCards(TWO));
@@ -46,7 +46,7 @@ public class SchnapsenState implements State {
         playerOneHiddenCards.addAll(schnapsenState.getHiddenCards(ONE));
         playerTwoHiddenCards.addAll(schnapsenState.getHiddenCards(TWO));
 
-        history = new ArrayList<>(schnapsenState.history);
+        history.addAll(schnapsenState.history);
     }
 
     public Trick getLastTrick() {

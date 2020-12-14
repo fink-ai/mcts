@@ -13,8 +13,9 @@ public class RandomPolicyEvaluator<TGame extends Game<TState, TAction>, TState e
         implements Evaluator<TGame, TState, TAction> {
 
     @Setter
-    private Random rand = new Random();
+    private Random rand = new Random(); // TODO: should always be injected
 
+    // TODO player parameter obsolete?
     public double getReward(TGame game, TState state, PlayerIdentifier player) {
         while (!state.isTerminal()) {
             Set<TAction> allowedActions = game.getAllowedActions(state);

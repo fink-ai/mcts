@@ -39,10 +39,13 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
         //      run evaluator on determinized State
         //  ^this might not actually work
         //      solution: don't store untried actions but instead infer them from child nodes
+        state = game.cloneState(state);
         root = new UctNode<>(state, null, null);
 
         for (long stop = System.nanoTime() + TimeUnit.SECONDS.toNanos(secondsToSearch);
              stop > System.nanoTime(); ) { // TODO: there should be a better way to limit the time
+
+            game.determinizeHiddenInformation(state, rand);
 
             UctNode<TState, TAction> nextChild = treePolicy(root);
             double reward = evaluator.getReward(game, nextChild.getState(), state.getActivePlayer());
@@ -63,9 +66,11 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
             );
 
             if (untriedActions.isEmpty()) {
-                node = selectChild(node, EXPLORATION_FACTOR);
+                UctNode<TState, TAction> bestChild = selectChild(node, EXPLORATION_FACTOR);
+                bestChild.setState(game.getNextState(node.getState(), bestChild.getAction()));
+                node = bestChild;
             } else {
-                node = expandNode(node, untriedActions);
+                return expandNode(node, untriedActions);
             }
         }
 
@@ -73,7 +78,10 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
     }
 
     public UctNode<TState, TAction> selectChild(UctNode<TState, TAction> node, double c) {
+        // TODO: refactor
+        Set<TAction> allowedActions = game.getAllowedActions(node.getState());
         return node.getChildren().stream()
+                .filter(child -> allowedActions.contains(child.getAction()))
                 .max(Comparator.comparing(child -> ucb(child, c))).orElse(null);
     }
 

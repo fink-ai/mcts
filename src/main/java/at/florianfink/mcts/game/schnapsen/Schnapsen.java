@@ -102,7 +102,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
 
     @Override
     public SchnapsenState getNextState(SchnapsenState currentState, SchnapsenAction action) {
-        SchnapsenState newState = new SchnapsenState(currentState);
+        SchnapsenState newState = cloneState(currentState);
 
         PlayerIdentifier previousPlayer = currentState.getActivePlayer();
         PlayerIdentifier previousOpponent = previousPlayer.getOpponent();
@@ -200,25 +200,31 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
 
     @Override
     public SchnapsenState determinizeHiddenInformation(SchnapsenState state, Random random) {
-        // TODO IncInf: don't create copy, instead randomize given state
-        SchnapsenState randomizedState = new SchnapsenState(state);
+        ArrayList<Card> stockCards = state.getStockCards();
+        Set<Card> opponentCards = state.getCards(state.getActivePlayer().getOpponent());
         ArrayList<Card> hiddenCards = new ArrayList<>(state.getHiddenCards(state.getActivePlayer()));
+        int opponentCardCount = opponentCards.size();
+        int stockCardCount = stockCards.size();
 
-        Set<Card> newOpponentCards = randomizedState.getCards(state.getActivePlayer().getOpponent());
-        newOpponentCards.removeIf(hiddenCards::contains);
-        randomizedState.getStockCards().removeIf(hiddenCards::contains);
+        opponentCards.removeIf(hiddenCards::contains);
+        stockCards.removeIf(hiddenCards::contains);
 
         Collections.shuffle(hiddenCards, random);
 
-        for (int i = newOpponentCards.size(); i < state.getCards(state.getActivePlayer().getOpponent()).size(); i++) {
-            newOpponentCards.add(hiddenCards.remove(0));
+        for (int i = opponentCards.size(); i < opponentCardCount; i++) {
+            opponentCards.add(hiddenCards.remove(0));
         }
-        for (int i = randomizedState.getStockCards().size(); i < state.getStockCards().size(); i++) {
-            randomizedState.getStockCards().add(0, hiddenCards.remove(0));
+        for (int i = stockCards.size(); i < stockCardCount; i++) {
+            stockCards.add(0, hiddenCards.remove(0));
         }
 
         assert hiddenCards.isEmpty();
 
-        return randomizedState;
+        return state;
+    }
+
+    @Override
+    public SchnapsenState cloneState(SchnapsenState state) {
+        return new SchnapsenState(state);
     }
 }

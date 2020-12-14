@@ -3,6 +3,7 @@ package at.florianfink.mcts.search;
 import at.florianfink.mcts.game.Action;
 import at.florianfink.mcts.game.State;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
@@ -14,7 +15,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class UctNode<TState extends State, TAction extends Action> {
 
-    private final TState state;
+    @NonNull
+    private TState state;
     private final TAction action;
     private final UctNode<TState, TAction> parent;
 
