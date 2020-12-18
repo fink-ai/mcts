@@ -16,7 +16,6 @@ import java.util.List;
  * Schnapsen can end with meld
  * ...
  * implement Bezique
- * play with imperfect information
  */
 public class App {
     public static void main(String[] args) {

@@ -31,14 +31,6 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
     private UctNode<TState, TAction> root;
 
     public TAction getBestAction(TState state) {
-        // TODO set rand of evaluator
-        //  in for:
-        //      create copy of state
-        //      determinization: randomize this instance
-        //      run treepolicy on root (with determinization as state)
-        //      run evaluator on determinized State
-        //  ^this might not actually work
-        //      solution: don't store untried actions but instead infer them from child nodes
         state = game.cloneState(state);
         root = new UctNode<>(state, null, null);
 
