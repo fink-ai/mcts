@@ -8,23 +8,28 @@ import at.florianfink.mcts.search.UctSearch;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * TODO:
  * if only one action, immediately select without search
  * don't throw away tree after each call to uct
  * Schnapsen can end with meld
+ * if stock closed: infer opponent cards from response (no cards of suit, no trump cards)
  * ...
  * implement Bezique
+ * ...
+ * multiple threads
  */
 public class App {
     public static void main(String[] args) {
         Schnapsen game = new Schnapsen();
-        UctSearch<Schnapsen, SchnapsenState, SchnapsenAction> uct = new UctSearch<>(game);
+        Random rand = new Random(432573);
+        UctSearch<Schnapsen, SchnapsenState, SchnapsenAction> uct = new UctSearch<>(game, rand);
         ArrayList<UctNode<SchnapsenState, SchnapsenAction>> roots = new ArrayList<>();
 
         List<SchnapsenState> states = new ArrayList<>();
-        states.add(game.initializeGame());
+        states.add(game.initializeGame(rand));
 
         SchnapsenAction selectedAction;
         SchnapsenState lastState = last(states);
@@ -38,7 +43,8 @@ public class App {
 
                 System.out.println("next move starting ...");
             } catch (Exception e) {
-                System.out.println("well ...");
+                e.printStackTrace();
+                System.exit(1);
             }
         }
 

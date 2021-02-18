@@ -2,33 +2,40 @@ package at.florianfink.mcts.search;
 
 import at.florianfink.mcts.game.Action;
 import at.florianfink.mcts.game.Game;
+import at.florianfink.mcts.game.PlayerIdentifier;
 import at.florianfink.mcts.game.State;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
 public class UctSearch<TGame extends Game<TState, TAction>, TState extends State, TAction extends Action> {
 
     private static final double EXPLORATION_FACTOR = 3;
 
     private final TGame game;
-    @Setter
-    private long secondsToSearch = 10;
-    @Setter
-    private Evaluator<TGame, TState, TAction> evaluator = new RandomPolicyEvaluator<>();
+
+    private final Random rand;
 
     @Setter
-    private Random rand = new Random();
+    private long secondsToSearch = 10;
+
+    @Setter
+    private Evaluator<TGame, TState, TAction> evaluator;
 
     @Getter
     private UctNode<TState, TAction> root;
+
+    public UctSearch(TGame game, Random rand) {
+        this.game = game;
+        this.rand = rand;
+        evaluator = new RandomPolicyEvaluator<>(rand);
+    }
 
     public TAction getBestAction(TState state) {
         state = game.cloneState(state);
@@ -40,7 +47,7 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
             game.determinizeHiddenInformation(state, rand);
 
             UctNode<TState, TAction> nextChild = treePolicy(root);
-            double reward = evaluator.getReward(game, nextChild.getState(), state.getActivePlayer());
+            double reward = evaluator.getReward(game, nextChild.getState(), nextChild.getParent().getState().getActivePlayer());
 
             backupReward(nextChild, reward);
         }
@@ -70,7 +77,6 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
     }
 
     public UctNode<TState, TAction> selectChild(UctNode<TState, TAction> node, double c) {
-        // TODO: refactor
         Set<TAction> allowedActions = game.getAllowedActions(node.getState());
         return node.getChildren().stream()
                 .filter(child -> allowedActions.contains(child.getAction()))
@@ -107,9 +113,20 @@ public class UctSearch<TGame extends Game<TState, TAction>, TState extends State
 
             node.setExpectedReward(node.getCumulativeReward() / node.getVisitCount());
 
-            if (node.getParent() != null && node.getParent().getState().getActivePlayer() != node.getState().getActivePlayer())
-                reward = -reward; // parent node is opponent
             node = node.getParent();
+
+            PlayerIdentifier childPlayer = Optional.ofNullable(node)
+                    .map(UctNode::getState)
+                    .map(TState::getActivePlayer)
+                    .orElse(null);
+            PlayerIdentifier parentPlayer = Optional.ofNullable(node)
+                    .map(UctNode::getParent)
+                    .map(UctNode::getState)
+                    .map(TState::getActivePlayer)
+                    .orElse(null);
+
+            if (childPlayer != parentPlayer)
+                reward = -reward; // parent node is opponent
         }
     }
 

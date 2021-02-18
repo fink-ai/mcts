@@ -12,11 +12,11 @@ import static at.florianfink.mcts.game.PlayerIdentifier.TWO;
 public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
 
     @Override
-    public SchnapsenState initializeGame() {
+    public SchnapsenState initializeGame(Random rand) {
         SchnapsenState initialState = new SchnapsenState();
 
         List<Card> deck = Card.generateDeck(2, 3, 4, 10, 11);
-        Collections.shuffle(deck);
+        Collections.shuffle(deck, rand);
         initialState.getStockCards().addAll(deck);
         initialState.setTrumpSuit(deck.get(deck.size() - 1).getSuit());
 
@@ -199,7 +199,7 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
     }
 
     @Override
-    public SchnapsenState determinizeHiddenInformation(SchnapsenState state, Random random) {
+    public void determinizeHiddenInformation(SchnapsenState state, Random random) {
         ArrayList<Card> stockCards = state.getStockCards();
         Set<Card> opponentCards = state.getCards(state.getActivePlayer().getOpponent());
         ArrayList<Card> hiddenCards = new ArrayList<>(state.getHiddenCards(state.getActivePlayer()));
@@ -219,8 +219,6 @@ public class Schnapsen implements Game<SchnapsenState, SchnapsenAction> {
         }
 
         assert hiddenCards.isEmpty();
-
-        return state;
     }
 
     @Override

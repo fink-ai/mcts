@@ -9,7 +9,7 @@ import java.util.Set;
 
 public class Bezique implements Game { // TODO parameterize
     @Override
-    public State initializeGame() {
+    public State initializeGame(Random rand) {
         return null;
     }
 
@@ -29,8 +29,7 @@ public class Bezique implements Game { // TODO parameterize
     }
 
     @Override
-    public State determinizeHiddenInformation(State state, Random random) {
-        return null;
+    public void determinizeHiddenInformation(State state, Random random) {
     }
 
     @Override

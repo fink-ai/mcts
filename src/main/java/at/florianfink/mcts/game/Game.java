@@ -5,7 +5,7 @@ import java.util.Set;
 
 public interface Game<TState extends State, TAction extends Action> {
 
-    TState initializeGame();
+    TState initializeGame(Random rand);
 
     Set<TAction> getAllowedActions(TState currentState);
 
@@ -13,7 +13,7 @@ public interface Game<TState extends State, TAction extends Action> {
 
     double getReward(TState state);
 
-    TState determinizeHiddenInformation(TState state, Random random);
+    void determinizeHiddenInformation(TState state, Random random);
 
     TState cloneState(TState state);
 }
